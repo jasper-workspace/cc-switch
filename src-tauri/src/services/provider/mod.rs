@@ -1488,7 +1488,13 @@ impl ProviderService {
         let local_current = crate::settings::get_current_provider(&app_type);
         let db_current = state.db.get_current_provider(app_type.as_str())?;
 
-        if local_current.as_deref() == Some(id) || db_current.as_deref() == Some(id) {
+        // Trae and CodeBuddy settings.json only contain MCP server config, not provider config.
+        // Their "current provider" in CC Switch is not meaningful - allow deletion.
+        let is_provider_config_app = matches!(app_type, AppType::Trae | AppType::CodeBuddy);
+
+        if !is_provider_config_app
+            && (local_current.as_deref() == Some(id) || db_current.as_deref() == Some(id))
+        {
             return Err(AppError::Message(
                 "无法删除当前正在使用的供应商".to_string(),
             ));
@@ -1947,6 +1953,7 @@ impl ProviderService {
             AppType::OpenCode => Self::extract_opencode_common_config(&provider.settings_config),
             AppType::OpenClaw => Self::extract_openclaw_common_config(&provider.settings_config),
             AppType::Hermes => Ok(String::new()), // Hermes doesn't use common config snippets
+            AppType::Trae | AppType::CodeBuddy => Ok(String::new()), // Trae/CodeBuddy don't use common config snippets
             AppType::Custom(_) => Ok(String::new()), // Custom apps don't use common config snippets
         }
     }
@@ -1964,6 +1971,7 @@ impl ProviderService {
             AppType::OpenCode => Self::extract_opencode_common_config(settings_config),
             AppType::OpenClaw => Self::extract_openclaw_common_config(settings_config),
             AppType::Hermes => Ok(String::new()), // Hermes doesn't use common config snippets
+            AppType::Trae | AppType::CodeBuddy => Ok(String::new()), // Trae/CodeBuddy don't use common config snippets
             AppType::Custom(_) => Ok(String::new()), // Custom apps don't use common config snippets
         }
     }
@@ -2353,6 +2361,16 @@ impl ProviderService {
                     ));
                 }
             }
+            AppType::Trae | AppType::CodeBuddy => {
+                // Trae/CodeBuddy: same as Claude, accept any JSON object
+                if !provider.settings_config.is_object() {
+                    return Err(AppError::localized(
+                        "provider.trae.settings.not_object",
+                        "Trae/CodeBuddy 配置必须是 JSON 对象",
+                        "Trae/CodeBuddy configuration must be a JSON object",
+                    ));
+                }
+            }
             AppType::Custom(_) => {
                 // Custom apps: accept any JSON object for now
                 if !provider.settings_config.is_object() {
@@ -2563,6 +2581,40 @@ impl ProviderService {
                 let base_url = provider
                     .settings_config
                     .get("baseUrl")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string();
+
+                Ok((api_key, base_url))
+            }
+            AppType::Trae | AppType::CodeBuddy => {
+                // Trae/CodeBuddy: same as Claude, use env fields
+                let env = provider
+                    .settings_config
+                    .get("env")
+                    .and_then(|v| v.as_object())
+                    .ok_or_else(|| {
+                        AppError::localized(
+                            "provider.trae.env.missing",
+                            "缺少 env 配置",
+                            "env configuration is missing",
+                        )
+                    })?;
+
+                let api_key = env
+                    .get("ANTHROPIC_API_KEY")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| {
+                        AppError::localized(
+                            "provider.trae.api_key.missing",
+                            "缺少 ANTHROPIC_API_KEY",
+                            "ANTHROPIC_API_KEY is missing",
+                        )
+                    })?
+                    .to_string();
+
+                let base_url = env
+                    .get("ANTHROPIC_BASE_URL")
                     .and_then(|v| v.as_str())
                     .unwrap_or("")
                     .to_string();

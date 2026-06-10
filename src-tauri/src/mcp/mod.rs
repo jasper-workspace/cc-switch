@@ -12,16 +12,21 @@
 //! - `hermes` - Hermes MCP 同步和导入
 
 mod claude;
+mod codebuddy;
 mod codex;
 mod gemini;
 mod hermes;
 mod opencode;
+mod trae;
 mod validation;
 
 // 重新导出公共 API
 pub use claude::{
     import_from_claude, remove_server_from_claude, sync_enabled_to_claude,
     sync_single_server_to_claude,
+};
+pub use codebuddy::{
+    import_from_codebuddy, remove_server_from_codebuddy, sync_single_server_to_codebuddy,
 };
 pub use codex::{
     import_from_codex, remove_server_from_codex, sync_enabled_to_codex, sync_single_server_to_codex,
@@ -34,3 +39,4 @@ pub use hermes::{import_from_hermes, remove_server_from_hermes, sync_single_serv
 pub use opencode::{
     import_from_opencode, remove_server_from_opencode, sync_single_server_to_opencode,
 };
+pub use trae::{import_from_traec, remove_server_from_traec, sync_single_server_to_traec};

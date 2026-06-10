@@ -5,6 +5,7 @@ mod claude_desktop_config;
 mod claude_mcp;
 mod claude_plugin;
 mod codex_config;
+mod codebuddy_config;
 mod codex_history_migration;
 mod commands;
 mod config;
@@ -32,6 +33,7 @@ mod session_manager;
 mod settings;
 mod store;
 
+mod trae_config;
 mod tray;
 mod usage_events;
 mod usage_script;

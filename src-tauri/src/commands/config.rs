@@ -126,6 +126,24 @@ pub async fn get_config_status(
 
             Ok(ConfigStatus { exists, path })
         }
+        AppType::Trae => {
+            let config_path = crate::trae_config::get_traec_settings_path();
+            let exists = config_path.exists();
+            let path = crate::trae_config::get_traec_dir()
+                .to_string_lossy()
+                .to_string();
+
+            Ok(ConfigStatus { exists, path })
+        }
+        AppType::CodeBuddy => {
+            let config_path = crate::codebuddy_config::get_codebuddy_settings_path();
+            let exists = config_path.exists();
+            let path = crate::codebuddy_config::get_codebuddy_dir()
+                .to_string_lossy()
+                .to_string();
+
+            Ok(ConfigStatus { exists, path })
+        }
         AppType::Custom(id) => {
             let dir = crate::settings::get_custom_app_dir(id.as_str())
                 .map_err(|e| e.to_string())?;
@@ -153,6 +171,8 @@ pub async fn get_config_dir(app: String) -> Result<String, String> {
         AppType::OpenCode => crate::opencode_config::get_opencode_dir(),
         AppType::OpenClaw => crate::openclaw_config::get_openclaw_dir(),
         AppType::Hermes => crate::hermes_config::get_hermes_dir(),
+        AppType::Trae => crate::trae_config::get_traec_dir(),
+        AppType::CodeBuddy => crate::codebuddy_config::get_codebuddy_dir(),
         AppType::Custom(id) => crate::settings::get_custom_app_dir(id.as_str())
             .map_err(|e| e.to_string())?,
     };
@@ -172,6 +192,8 @@ pub async fn open_config_folder(handle: AppHandle, app: String) -> Result<bool, 
         AppType::OpenCode => crate::opencode_config::get_opencode_dir(),
         AppType::OpenClaw => crate::openclaw_config::get_openclaw_dir(),
         AppType::Hermes => crate::hermes_config::get_hermes_dir(),
+        AppType::Trae => crate::trae_config::get_traec_dir(),
+        AppType::CodeBuddy => crate::codebuddy_config::get_codebuddy_dir(),
         AppType::Custom(id) => crate::settings::get_custom_app_dir(id.as_str())
             .map_err(|e| e.to_string())?,
     };

@@ -45,6 +45,8 @@ impl Database {
                         gemini: row.get(10)?,
                         opencode: row.get(11)?,
                         hermes: row.get(12)?,
+                        trae: false, // TODO: add enabled_trae column
+                        codebuddy: false, // TODO: add enabled_codebuddy column
                     },
                     installed_at: row.get(13)?,
                     content_hash: row.get(14)?,
@@ -89,6 +91,8 @@ impl Database {
                     gemini: row.get(10)?,
                     opencode: row.get(11)?,
                     hermes: row.get(12)?,
+                    trae: false, // TODO: add enabled_trae column
+                    codebuddy: false, // TODO: add enabled_codebuddy column
                 },
                 installed_at: row.get(13)?,
                 content_hash: row.get(14)?,

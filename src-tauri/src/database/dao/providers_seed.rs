@@ -24,10 +24,28 @@ pub(crate) struct OfficialProviderSeed {
     pub settings_config_json: &'static str,
 }
 
-/// Claude / Claude Desktop / Codex / Gemini 的官方预设。
+/// Claude / Claude Desktop / Codex / Gemini / Trae / CodeBuddy 的官方预设。
 ///
 /// id 固定，便于幂等检查；name 直接用英文原名（与前端预设一致），不做 i18n。
 pub(crate) const OFFICIAL_SEEDS: &[OfficialProviderSeed] = &[
+    OfficialProviderSeed {
+        id: "trae-official",
+        app_type: AppType::Trae,
+        name: "Trae Official",
+        website_url: "https://trae.ai",
+        icon: "trae",
+        icon_color: "#14b8a6", // teal-500
+        settings_config_json: r#"{"env":{}}"#,
+    },
+    OfficialProviderSeed {
+        id: "codebuddy-official",
+        app_type: AppType::CodeBuddy,
+        name: "CodeBuddy Official",
+        website_url: "https://codebuddy.cn",
+        icon: "codebuddy",
+        icon_color: "#a855f7", // purple-500
+        settings_config_json: r#"{"env":{}}"#,
+    },
     OfficialProviderSeed {
         id: "claude-official",
         app_type: AppType::Claude,

@@ -220,8 +220,11 @@ export function ProviderActions({
 
   const buttonState = getMainButtonState();
 
+  // Trae and CodeBuddy don't have meaningful provider config in CC Switch,
+  // so allow deleting the current provider for these apps.
+  const isProviderConfigApp = appId === "trae" || appId === "codebuddy";
   const canDelete =
-    !isReadOnly && (isOmo || isAdditiveMode ? true : !isCurrent);
+    !isReadOnly && (isOmo || isAdditiveMode || isProviderConfigApp ? true : !isCurrent);
   const readOnlyHint = t("provider.managedByHermesHint", {
     defaultValue: "由 Hermes 管理，请在 Hermes Web UI 中编辑",
   });

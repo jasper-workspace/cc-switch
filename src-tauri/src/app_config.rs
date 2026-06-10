@@ -18,6 +18,10 @@ pub struct McpApps {
     pub opencode: bool,
     #[serde(default)]
     pub hermes: bool,
+    #[serde(default)]
+    pub trae: bool,
+    #[serde(default)]
+    pub codebuddy: bool,
 }
 
 impl McpApps {
@@ -31,6 +35,8 @@ impl McpApps {
             AppType::OpenClaw => false, // OpenClaw doesn't support MCP
             AppType::Hermes => self.hermes,
             AppType::ClaudeDesktop => false,
+            AppType::Trae => self.trae,
+            AppType::CodeBuddy => self.codebuddy,
             AppType::Custom(_) => false, // Custom apps don't support MCP by default
         }
     }
@@ -45,6 +51,8 @@ impl McpApps {
             AppType::OpenClaw => {} // OpenClaw doesn't support MCP, ignore
             AppType::Hermes => self.hermes = enabled,
             AppType::ClaudeDesktop => {} // Claude Desktop 3P provider config doesn't support MCP here
+            AppType::Trae => self.trae = enabled,
+            AppType::CodeBuddy => self.codebuddy = enabled,
             AppType::Custom(_) => {} // Custom apps don't support MCP
         }
     }
@@ -67,12 +75,18 @@ impl McpApps {
         if self.hermes {
             apps.push(AppType::Hermes);
         }
+        if self.trae {
+            apps.push(AppType::Trae);
+        }
+        if self.codebuddy {
+            apps.push(AppType::CodeBuddy);
+        }
         apps
     }
 
     /// 检查是否所有应用都未启用
     pub fn is_empty(&self) -> bool {
-        !self.claude && !self.codex && !self.gemini && !self.opencode && !self.hermes
+        !self.claude && !self.codex && !self.gemini && !self.opencode && !self.hermes && !self.trae && !self.codebuddy
     }
 }
 
@@ -89,6 +103,10 @@ pub struct SkillApps {
     pub opencode: bool,
     #[serde(default)]
     pub hermes: bool,
+    #[serde(default)]
+    pub trae: bool,
+    #[serde(default)]
+    pub codebuddy: bool,
 }
 
 impl SkillApps {
@@ -102,6 +120,8 @@ impl SkillApps {
             AppType::Hermes => self.hermes,
             AppType::OpenClaw => false, // OpenClaw doesn't support Skills
             AppType::ClaudeDesktop => false,
+            AppType::Trae => self.trae,
+            AppType::CodeBuddy => self.codebuddy,
             AppType::Custom(_) => false, // Custom apps don't support Skills by default
         }
     }
@@ -116,6 +136,8 @@ impl SkillApps {
             AppType::Hermes => self.hermes = enabled,
             AppType::OpenClaw => {} // OpenClaw doesn't support Skills, ignore
             AppType::ClaudeDesktop => {} // Claude Desktop 3P profiles don't use CC Switch skill sync
+            AppType::Trae => self.trae = enabled,
+            AppType::CodeBuddy => self.codebuddy = enabled,
             AppType::Custom(_) => {} // Custom apps don't support Skills
         }
     }
@@ -138,12 +160,18 @@ impl SkillApps {
         if self.hermes {
             apps.push(AppType::Hermes);
         }
+        if self.trae {
+            apps.push(AppType::Trae);
+        }
+        if self.codebuddy {
+            apps.push(AppType::CodeBuddy);
+        }
         apps
     }
 
     /// 检查是否所有应用都未启用
     pub fn is_empty(&self) -> bool {
-        !self.claude && !self.codex && !self.gemini && !self.opencode && !self.hermes
+        !self.claude && !self.codex && !self.gemini && !self.opencode && !self.hermes && !self.trae && !self.codebuddy
     }
 
     /// 仅启用指定应用（其他应用设为禁用）
@@ -282,9 +310,15 @@ pub struct McpRoot {
     /// OpenClaw MCP 配置（v4.1.0+，实际使用 openclaw.json）
     #[serde(default, skip_serializing_if = "McpConfig::is_empty")]
     pub openclaw: McpConfig,
-       /// Hermes MCP 配置（实际使用 config.yaml）
+    /// Hermes MCP 配置（实际使用 config.yaml）
     #[serde(default, skip_serializing_if = "McpConfig::is_empty")]
     pub hermes: McpConfig,
+    /// Trae MCP 配置
+    #[serde(default, skip_serializing_if = "McpConfig::is_empty")]
+    pub trae: McpConfig,
+    /// CodeBuddy MCP 配置
+    #[serde(default, skip_serializing_if = "McpConfig::is_empty")]
+    pub codebuddy: McpConfig,
     /// 自定义应用的 MCP 配置
     #[serde(default, skip_serializing_if = "std::collections::HashMap::is_empty")]
     pub custom_apps: HashMap<String, McpConfig>,
@@ -303,6 +337,8 @@ impl Default for McpRoot {
             opencode: McpConfig::default(),
             openclaw: McpConfig::default(),
             hermes: McpConfig::default(),
+            trae: McpConfig::default(),
+            codebuddy: McpConfig::default(),
             custom_apps: HashMap::default(),
         }
     }
@@ -335,8 +371,12 @@ pub struct PromptRoot {
     pub opencode: PromptConfig,
     #[serde(default)]
     pub openclaw: PromptConfig,
-       #[serde(default)]
+    #[serde(default)]
     pub hermes: PromptConfig,
+    #[serde(default)]
+    pub trae: PromptConfig,
+    #[serde(default)]
+    pub codebuddy: PromptConfig,
     #[serde(default)]
     pub custom_apps: HashMap<String, PromptConfig>,
 }
@@ -359,6 +399,8 @@ pub enum AppType {
     ClaudeDesktop,
     Codex,
     Gemini,
+    Trae,
+    CodeBuddy,
     OpenCode,
     OpenClaw,
     Hermes,
@@ -373,6 +415,8 @@ impl AppType {
             AppType::ClaudeDesktop => "claude-desktop",
             AppType::Codex => "codex",
             AppType::Gemini => "gemini",
+            AppType::Trae => "trae",
+            AppType::CodeBuddy => "codebuddy",
             AppType::OpenCode => "opencode",
             AppType::OpenClaw => "openclaw",
             AppType::Hermes => "hermes",
@@ -398,6 +442,8 @@ impl AppType {
             AppType::ClaudeDesktop,
             AppType::Codex,
             AppType::Gemini,
+            AppType::Trae,
+            AppType::CodeBuddy,
             AppType::OpenCode,
             AppType::OpenClaw,
             AppType::Hermes,
@@ -440,6 +486,8 @@ impl FromStr for AppType {
             "claude-desktop" | "claude_desktop" | "claudedesktop" => Ok(AppType::ClaudeDesktop),
             "codex" => Ok(AppType::Codex),
             "gemini" => Ok(AppType::Gemini),
+            "trae" => Ok(AppType::Trae),
+            "codebuddy" => Ok(AppType::CodeBuddy),
             "opencode" => Ok(AppType::OpenCode),
             "openclaw" => Ok(AppType::OpenClaw),
             "hermes" => Ok(AppType::Hermes),
@@ -450,8 +498,8 @@ impl FromStr for AppType {
                 } else {
                     Err(AppError::localized(
                         "unsupported_app",
-                        format!("不支持的应用标识: '{other}'。可选值: claude, claude-desktop, codex, gemini, opencode, openclaw, hermes 或有效的自定义应用ID。"),
-                        format!("Unsupported app id: '{other}'. Allowed: claude, claude-desktop, codex, gemini, opencode, openclaw, hermes or a valid custom app ID."),
+                        format!("不支持的应用标识: '{other}'。可选值: claude, claude-desktop, codex, gemini, trae, codebuddy, opencode, openclaw, hermes 或有效的自定义应用ID。"),
+                        format!("Unsupported app id: '{other}'. Allowed: claude, claude-desktop, codex, gemini, trae, codebuddy, opencode, openclaw, hermes or a valid custom app ID."),
                     ))
                 }
             }
@@ -490,6 +538,12 @@ pub struct CommonConfigSnippets {
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub hermes: Option<String>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub trae: Option<String>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub codebuddy: Option<String>,
 }
 
 impl CommonConfigSnippets {
@@ -503,6 +557,8 @@ impl CommonConfigSnippets {
             AppType::OpenCode => self.opencode.as_ref(),
             AppType::OpenClaw => self.openclaw.as_ref(),
             AppType::Hermes => self.hermes.as_ref(),
+            AppType::Trae => self.trae.as_ref(),
+            AppType::CodeBuddy => self.codebuddy.as_ref(),
             AppType::Custom(_) => None,
         }
     }
@@ -517,6 +573,8 @@ impl CommonConfigSnippets {
             AppType::OpenCode => self.opencode = snippet,
             AppType::OpenClaw => self.openclaw = snippet,
             AppType::Hermes => self.hermes = snippet,
+            AppType::Trae => self.trae = snippet,
+            AppType::CodeBuddy => self.codebuddy = snippet,
             AppType::Custom(_) => {}
         }
     }
@@ -723,6 +781,8 @@ impl MultiAppConfig {
             AppType::OpenCode => Cow::Borrowed(&self.mcp.opencode),
             AppType::OpenClaw => Cow::Borrowed(&self.mcp.openclaw),
             AppType::Hermes => Cow::Borrowed(&self.mcp.hermes),
+            AppType::Trae => Cow::Borrowed(&self.mcp.trae),
+            AppType::CodeBuddy => Cow::Borrowed(&self.mcp.codebuddy),
             AppType::Custom(id) => {
                 Cow::Owned(self.mcp.custom_apps.get(id).cloned().unwrap_or_default())
             }
@@ -739,6 +799,8 @@ impl MultiAppConfig {
             AppType::OpenCode => &mut self.mcp.opencode,
             AppType::OpenClaw => &mut self.mcp.openclaw,
             AppType::Hermes => &mut self.mcp.hermes,
+            AppType::Trae => &mut self.mcp.trae,
+            AppType::CodeBuddy => &mut self.mcp.codebuddy,
             AppType::Custom(id) => self.mcp.custom_apps.entry(id.clone()).or_default(),
         }
     }
@@ -779,6 +841,8 @@ impl MultiAppConfig {
             || !self.prompts.opencode.prompts.is_empty()
             || !self.prompts.openclaw.prompts.is_empty()
             || !self.prompts.hermes.prompts.is_empty()
+            || !self.prompts.trae.prompts.is_empty()
+            || !self.prompts.codebuddy.prompts.is_empty()
         {
             return Ok(false);
         }
@@ -868,6 +932,8 @@ impl MultiAppConfig {
             AppType::OpenCode => &mut config.prompts.opencode.prompts,
             AppType::OpenClaw => &mut config.prompts.openclaw.prompts,
             AppType::Hermes => &mut config.prompts.hermes.prompts,
+            AppType::Trae => &mut config.prompts.trae.prompts,
+            AppType::CodeBuddy => &mut config.prompts.codebuddy.prompts,
             AppType::Custom(id) => {
                 &mut config.prompts.custom_apps.entry(id.clone()).or_default().prompts
             }
@@ -905,7 +971,7 @@ impl MultiAppConfig {
             AppType::Gemini,
             AppType::OpenCode,
         ] {
-            let old_servers = match app {
+                       let old_servers = match app {
                 AppType::Claude => &self.mcp.claude.servers,
                 AppType::ClaudeDesktop => continue, // Claude Desktop 3P profiles don't use MCP here
                 AppType::Codex => &self.mcp.codex.servers,
@@ -913,6 +979,8 @@ impl MultiAppConfig {
                 AppType::OpenCode => &self.mcp.opencode.servers,
                 AppType::OpenClaw => continue, // OpenClaw MCP is still in development, skip
                 AppType::Hermes => continue,   // Hermes didn't exist in v3.6.x, skip
+                AppType::Trae => continue,    // Trae is new, no old config to migrate
+                AppType::CodeBuddy => continue, // CodeBuddy is new, no old config to migrate
                 AppType::Custom(_) => continue, // Custom apps are new, no old config to migrate
             };
 

@@ -536,6 +536,8 @@ impl SkillService {
                     return Ok(custom.join("skills"));
                 }
             }
+            AppType::Trae => {}
+            AppType::CodeBuddy => {}
             AppType::Custom(id) => {
                 let custom_dir = crate::settings::get_custom_app_dir(id)?;
                 return Ok(custom_dir.join("skills"));
@@ -557,6 +559,8 @@ impl SkillService {
             AppType::OpenCode => home.join(".config").join("opencode").join("skills"),
             AppType::OpenClaw => home.join(".openclaw").join("skills"),
             AppType::Hermes => crate::hermes_config::get_hermes_dir().join("skills"),
+            AppType::Trae => home.join(".trae-cn").join("skills"),
+            AppType::CodeBuddy => home.join(".codebuddy").join("skills"),
             AppType::Custom(id) => crate::settings::get_custom_app_dir(id)?.join("skills"),
         })
     }

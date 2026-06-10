@@ -48,6 +48,8 @@ impl Database {
                             gemini: enabled_gemini,
                             opencode: enabled_opencode,
                             hermes: enabled_hermes,
+                            trae: false, // TODO: add enabled_trae column
+                            codebuddy: false, // TODO: add enabled_codebuddy column
                         },
                         description,
                         homepage,

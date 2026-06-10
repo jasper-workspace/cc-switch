@@ -347,6 +347,10 @@ fn settings_contain_common_config(app_type: &AppType, settings: &Value, snippet:
             }
             _ => false,
         },
+        AppType::Trae | AppType::CodeBuddy => match serde_json::from_str::<Value>(trimmed) {
+            Ok(source) if source.is_object() => json_is_subset(settings, &source),
+            _ => false,
+        },
         AppType::OpenCode | AppType::OpenClaw | AppType::Hermes | AppType::ClaudeDesktop => false,
         AppType::Custom(_) => false,
     }
@@ -418,6 +422,13 @@ pub(crate) fn remove_common_config_from_settings(
             }
             Ok(result)
         }
+        AppType::Trae | AppType::CodeBuddy => {
+            let source = serde_json::from_str::<Value>(trimmed)
+                .map_err(|e| AppError::Message(format!("Invalid Trae/CodeBuddy common config: {e}")))?;
+            let mut result = settings.clone();
+            json_deep_remove(&mut result, &source);
+            Ok(result)
+        }
         AppType::OpenCode | AppType::OpenClaw | AppType::Hermes | AppType::ClaudeDesktop => {
             Ok(settings.clone())
         }
@@ -474,6 +485,13 @@ fn apply_common_config_to_settings(
             } else if let Some(obj) = result.as_object_mut() {
                 obj.insert("env".to_string(), source);
             }
+            Ok(result)
+        }
+        AppType::Trae | AppType::CodeBuddy => {
+            let source = serde_json::from_str::<Value>(trimmed)
+                .map_err(|e| AppError::Message(format!("Invalid Trae/CodeBuddy common config: {e}")))?;
+            let mut result = settings.clone();
+            json_deep_merge(&mut result, &source);
             Ok(result)
         }
         AppType::OpenCode | AppType::OpenClaw | AppType::Hermes | AppType::ClaudeDesktop => {
@@ -865,6 +883,18 @@ pub(crate) fn write_live_snapshot(app_type: &AppType, provider: &Provider) -> Re
             crate::hermes_config::set_provider(&provider.id, provider.settings_config.clone())?;
             log::debug!("Hermes provider '{}' written to live config", provider.id);
         }
+        AppType::Trae => {
+            let path = crate::trae_config::get_traec_settings_path();
+            let settings = sanitize_claude_settings_for_live(&provider.settings_config);
+            write_json_file(&path, &settings)?;
+            log::debug!("Trae provider '{}' written to live config", provider.id);
+        }
+        AppType::CodeBuddy => {
+            let path = crate::codebuddy_config::get_codebuddy_settings_path();
+            let settings = sanitize_claude_settings_for_live(&provider.settings_config);
+            write_json_file(&path, &settings)?;
+            log::debug!("CodeBuddy provider '{}' written to live config", provider.id);
+        }
         AppType::Custom(_) => {
             // Custom apps use additive mode - no single provider live config to write
             // Providers are managed through the custom app's own config directory
@@ -1123,6 +1153,28 @@ pub fn read_live_settings(app_type: AppType) -> Result<Value, AppError> {
             "自定义应用不支持读取 live 配置",
             "Custom apps do not support reading live configuration",
         )),
+        AppType::Trae => {
+            let path = crate::trae_config::get_traec_settings_path();
+            if !path.exists() {
+                return Err(AppError::localized(
+                    "trae.live.missing",
+                    "Trae 配置文件不存在",
+                    "Trae settings file is missing",
+                ));
+            }
+            read_json_file(&path)
+        }
+        AppType::CodeBuddy => {
+            let path = crate::codebuddy_config::get_codebuddy_settings_path();
+            if !path.exists() {
+                return Err(AppError::localized(
+                    "codebuddy.live.missing",
+                    "CodeBuddy 配置文件不存在",
+                    "CodeBuddy settings file is missing",
+                ));
+            }
+            read_json_file(&path)
+        }
     }
 }
 
@@ -1199,6 +1251,11 @@ pub fn import_default_config(state: &AppState, app_type: AppType) -> Result<bool
                 "env": env_obj,
                 "config": config_obj
             })
+        }
+        // Trae and CodeBuddy settings.json only contain MCP server config, not provider configs.
+        // Importing "providers" from these apps does not make sense - return early without creating a dummy provider.
+        AppType::Trae | AppType::CodeBuddy => {
+            return Ok(false);
         }
         // OpenCode, OpenClaw and Hermes use additive mode and are handled by early return above
         AppType::OpenCode | AppType::OpenClaw | AppType::Hermes => {
