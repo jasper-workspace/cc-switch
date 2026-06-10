@@ -56,14 +56,14 @@ const UnifiedMcpPanel = React.forwardRef<
   }, [serversMap]);
 
   const enabledCounts = useMemo(() => {
-    const counts = {
+    const counts: Record<string, number> = {
+      trae: 0,
+      codebuddy: 0,
       claude: 0,
       "claude-desktop": 0,
       codex: 0,
-      gemini: 0,
       opencode: 0,
       openclaw: 0,
-      hermes: 0,
     };
     serverEntries.forEach(([_, server]) => {
       for (const app of MCP_APP_IDS) {

@@ -348,6 +348,7 @@ fn settings_contain_common_config(app_type: &AppType, settings: &Value, snippet:
             _ => false,
         },
         AppType::OpenCode | AppType::OpenClaw | AppType::Hermes | AppType::ClaudeDesktop => false,
+        AppType::Custom(_) => false,
     }
 }
 
@@ -420,6 +421,7 @@ pub(crate) fn remove_common_config_from_settings(
         AppType::OpenCode | AppType::OpenClaw | AppType::Hermes | AppType::ClaudeDesktop => {
             Ok(settings.clone())
         }
+        AppType::Custom(_) => Ok(settings.clone()),
     }
 }
 
@@ -477,6 +479,7 @@ fn apply_common_config_to_settings(
         AppType::OpenCode | AppType::OpenClaw | AppType::Hermes | AppType::ClaudeDesktop => {
             Ok(settings.clone())
         }
+        AppType::Custom(_) => Ok(settings.clone()),
     }
 }
 
@@ -862,6 +865,10 @@ pub(crate) fn write_live_snapshot(app_type: &AppType, provider: &Provider) -> Re
             crate::hermes_config::set_provider(&provider.id, provider.settings_config.clone())?;
             log::debug!("Hermes provider '{}' written to live config", provider.id);
         }
+        AppType::Custom(_) => {
+            // Custom apps use additive mode - no single provider live config to write
+            // Providers are managed through the custom app's own config directory
+        }
     }
     Ok(())
 }
@@ -1111,6 +1118,11 @@ pub fn read_live_settings(app_type: AppType) -> Result<Value, AppError> {
             let config = crate::hermes_config::yaml_to_json(&yaml_config)?;
             Ok(config)
         }
+        AppType::Custom(_) => Err(AppError::localized(
+            "custom_app.live.read_unsupported",
+            "自定义应用不支持读取 live 配置",
+            "Custom apps do not support reading live configuration",
+        )),
     }
 }
 
@@ -1191,6 +1203,9 @@ pub fn import_default_config(state: &AppState, app_type: AppType) -> Result<bool
         // OpenCode, OpenClaw and Hermes use additive mode and are handled by early return above
         AppType::OpenCode | AppType::OpenClaw | AppType::Hermes => {
             unreachable!("additive mode apps are handled by early return")
+        }
+        AppType::Custom(_) => {
+            unreachable!("custom apps use additive mode and are handled by early return")
         }
     };
 

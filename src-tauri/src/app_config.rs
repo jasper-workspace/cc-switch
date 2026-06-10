@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -30,6 +31,7 @@ impl McpApps {
             AppType::OpenClaw => false, // OpenClaw doesn't support MCP
             AppType::Hermes => self.hermes,
             AppType::ClaudeDesktop => false,
+            AppType::Custom(_) => false, // Custom apps don't support MCP by default
         }
     }
 
@@ -43,6 +45,7 @@ impl McpApps {
             AppType::OpenClaw => {} // OpenClaw doesn't support MCP, ignore
             AppType::Hermes => self.hermes = enabled,
             AppType::ClaudeDesktop => {} // Claude Desktop 3P provider config doesn't support MCP here
+            AppType::Custom(_) => {} // Custom apps don't support MCP
         }
     }
 
@@ -99,6 +102,7 @@ impl SkillApps {
             AppType::Hermes => self.hermes,
             AppType::OpenClaw => false, // OpenClaw doesn't support Skills
             AppType::ClaudeDesktop => false,
+            AppType::Custom(_) => false, // Custom apps don't support Skills by default
         }
     }
 
@@ -112,6 +116,7 @@ impl SkillApps {
             AppType::Hermes => self.hermes = enabled,
             AppType::OpenClaw => {} // OpenClaw doesn't support Skills, ignore
             AppType::ClaudeDesktop => {} // Claude Desktop 3P profiles don't use CC Switch skill sync
+            AppType::Custom(_) => {} // Custom apps don't support Skills
         }
     }
 
@@ -277,9 +282,12 @@ pub struct McpRoot {
     /// OpenClaw MCP 配置（v4.1.0+，实际使用 openclaw.json）
     #[serde(default, skip_serializing_if = "McpConfig::is_empty")]
     pub openclaw: McpConfig,
-    /// Hermes MCP 配置（实际使用 config.yaml）
+       /// Hermes MCP 配置（实际使用 config.yaml）
     #[serde(default, skip_serializing_if = "McpConfig::is_empty")]
     pub hermes: McpConfig,
+    /// 自定义应用的 MCP 配置
+    #[serde(default, skip_serializing_if = "std::collections::HashMap::is_empty")]
+    pub custom_apps: HashMap<String, McpConfig>,
 }
 
 impl Default for McpRoot {
@@ -295,6 +303,7 @@ impl Default for McpRoot {
             opencode: McpConfig::default(),
             openclaw: McpConfig::default(),
             hermes: McpConfig::default(),
+            custom_apps: HashMap::default(),
         }
     }
 }
@@ -326,8 +335,10 @@ pub struct PromptRoot {
     pub opencode: PromptConfig,
     #[serde(default)]
     pub openclaw: PromptConfig,
-    #[serde(default)]
+       #[serde(default)]
     pub hermes: PromptConfig,
+    #[serde(default)]
+    pub custom_apps: HashMap<String, PromptConfig>,
 }
 
 use crate::config::{copy_file, get_app_config_dir, get_app_config_path, write_json_file};
@@ -335,7 +346,7 @@ use crate::error::AppError;
 use crate::prompt_files::prompt_file_path;
 use crate::provider::ProviderManager;
 
-/// 应用类型
+/// 应用类型（支持内置 + 自定义）
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum AppType {
@@ -351,6 +362,8 @@ pub enum AppType {
     OpenCode,
     OpenClaw,
     Hermes,
+    /// 自定义应用（通过字符串 ID 标识）
+    Custom(String),
 }
 
 impl AppType {
@@ -363,6 +376,7 @@ impl AppType {
             AppType::OpenCode => "opencode",
             AppType::OpenClaw => "openclaw",
             AppType::Hermes => "hermes",
+            AppType::Custom(id) => id.as_str(),
         }
     }
 
@@ -373,12 +387,12 @@ impl AppType {
     pub fn is_additive_mode(&self) -> bool {
         matches!(
             self,
-            AppType::OpenCode | AppType::OpenClaw | AppType::Hermes
+            AppType::OpenCode | AppType::OpenClaw | AppType::Hermes | AppType::Custom(_)
         )
     }
 
-    /// Return an iterator over all app types
-    pub fn all() -> impl Iterator<Item = AppType> {
+    /// Return an iterator over all builtin app types
+    pub fn all_builtin() -> impl Iterator<Item = AppType> {
         [
             AppType::Claude,
             AppType::ClaudeDesktop,
@@ -389,6 +403,30 @@ impl AppType {
             AppType::Hermes,
         ]
         .into_iter()
+    }
+
+    /// Return an iterator over all app types (including custom apps loaded from settings)
+    /// Note: This only returns builtin apps. Custom apps must be provided separately.
+    pub fn all() -> impl Iterator<Item = AppType> {
+        Self::all_builtin()
+    }
+
+    /// Check if this is a builtin app type
+    pub fn is_builtin(&self) -> bool {
+        !matches!(self, AppType::Custom(_))
+    }
+
+    /// Check if this is a custom app type
+    pub fn is_custom(&self) -> bool {
+        matches!(self, AppType::Custom(_))
+    }
+
+    /// Get the custom app ID if this is a custom app
+    pub fn custom_id(&self) -> Option<&str> {
+        match self {
+            AppType::Custom(id) => Some(id.as_str()),
+            _ => None,
+        }
     }
 }
 
@@ -405,12 +443,30 @@ impl FromStr for AppType {
             "opencode" => Ok(AppType::OpenCode),
             "openclaw" => Ok(AppType::OpenClaw),
             "hermes" => Ok(AppType::Hermes),
-            other => Err(AppError::localized(
-                "unsupported_app",
-                format!("不支持的应用标识: '{other}'。可选值: claude, claude-desktop, codex, gemini, opencode, openclaw, hermes。"),
-                format!("Unsupported app id: '{other}'. Allowed: claude, claude-desktop, codex, gemini, opencode, openclaw, hermes."),
-            )),
+            other => {
+                // 检查是否为有效的自定义应用 ID
+                if Self::is_valid_custom_app_id(other) {
+                    Ok(AppType::Custom(other.to_string()))
+                } else {
+                    Err(AppError::localized(
+                        "unsupported_app",
+                        format!("不支持的应用标识: '{other}'。可选值: claude, claude-desktop, codex, gemini, opencode, openclaw, hermes 或有效的自定义应用ID。"),
+                        format!("Unsupported app id: '{other}'. Allowed: claude, claude-desktop, codex, gemini, opencode, openclaw, hermes or a valid custom app ID."),
+                    ))
+                }
+            }
         }
+    }
+}
+
+impl AppType {
+    /// 检查自定义应用 ID 是否有效
+    fn is_valid_custom_app_id(id: &str) -> bool {
+        !id.is_empty()
+            && id.len() <= 50
+            && id
+                .chars()
+                .all(|c| c.is_alphanumeric() || c == '-' || c == '_')
     }
 }
 
@@ -447,6 +503,7 @@ impl CommonConfigSnippets {
             AppType::OpenCode => self.opencode.as_ref(),
             AppType::OpenClaw => self.openclaw.as_ref(),
             AppType::Hermes => self.hermes.as_ref(),
+            AppType::Custom(_) => None,
         }
     }
 
@@ -460,6 +517,7 @@ impl CommonConfigSnippets {
             AppType::OpenCode => self.opencode = snippet,
             AppType::OpenClaw => self.openclaw = snippet,
             AppType::Hermes => self.hermes = snippet,
+            AppType::Custom(_) => {}
         }
     }
 }
@@ -656,15 +714,18 @@ impl MultiAppConfig {
     }
 
     /// 获取指定客户端的 MCP 配置（不可变引用）
-    pub fn mcp_for(&self, app: &AppType) -> &McpConfig {
+    pub fn mcp_for(&self, app: &AppType) -> Cow<'_, McpConfig> {
         match app {
-            AppType::Claude => &self.mcp.claude,
-            AppType::ClaudeDesktop => &self.mcp.claude_desktop,
-            AppType::Codex => &self.mcp.codex,
-            AppType::Gemini => &self.mcp.gemini,
-            AppType::OpenCode => &self.mcp.opencode,
-            AppType::OpenClaw => &self.mcp.openclaw,
-            AppType::Hermes => &self.mcp.hermes,
+            AppType::Claude => Cow::Borrowed(&self.mcp.claude),
+            AppType::ClaudeDesktop => Cow::Borrowed(&self.mcp.claude_desktop),
+            AppType::Codex => Cow::Borrowed(&self.mcp.codex),
+            AppType::Gemini => Cow::Borrowed(&self.mcp.gemini),
+            AppType::OpenCode => Cow::Borrowed(&self.mcp.opencode),
+            AppType::OpenClaw => Cow::Borrowed(&self.mcp.openclaw),
+            AppType::Hermes => Cow::Borrowed(&self.mcp.hermes),
+            AppType::Custom(id) => {
+                Cow::Owned(self.mcp.custom_apps.get(id).cloned().unwrap_or_default())
+            }
         }
     }
 
@@ -678,6 +739,7 @@ impl MultiAppConfig {
             AppType::OpenCode => &mut self.mcp.opencode,
             AppType::OpenClaw => &mut self.mcp.openclaw,
             AppType::Hermes => &mut self.mcp.hermes,
+            AppType::Custom(id) => self.mcp.custom_apps.entry(id.clone()).or_default(),
         }
     }
 
@@ -795,6 +857,8 @@ impl MultiAppConfig {
             updated_at: Some(timestamp),
         };
 
+        let app_str = app.as_str().to_string();
+
         // 插入到对应的应用配置中
         let prompts = match app {
             AppType::Claude => &mut config.prompts.claude.prompts,
@@ -804,11 +868,14 @@ impl MultiAppConfig {
             AppType::OpenCode => &mut config.prompts.opencode.prompts,
             AppType::OpenClaw => &mut config.prompts.openclaw.prompts,
             AppType::Hermes => &mut config.prompts.hermes.prompts,
+            AppType::Custom(id) => {
+                &mut config.prompts.custom_apps.entry(id.clone()).or_default().prompts
+            }
         };
 
         prompts.insert(id, prompt);
 
-        log::info!("自动导入完成: {}", app.as_str());
+        log::info!("自动导入完成: {}", app_str);
         Ok(true)
     }
 
@@ -846,6 +913,7 @@ impl MultiAppConfig {
                 AppType::OpenCode => &self.mcp.opencode.servers,
                 AppType::OpenClaw => continue, // OpenClaw MCP is still in development, skip
                 AppType::Hermes => continue,   // Hermes didn't exist in v3.6.x, skip
+                AppType::Custom(_) => continue, // Custom apps are new, no old config to migrate
             };
 
             for (id, entry) in old_servers {

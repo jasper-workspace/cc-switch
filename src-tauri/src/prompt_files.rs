@@ -26,6 +26,7 @@ pub fn prompt_file_path(app: &AppType) -> Result<PathBuf, AppError> {
         AppType::OpenClaw => get_openclaw_dir(),
         AppType::Hermes => crate::hermes_config::get_hermes_dir(),
         AppType::ClaudeDesktop => unreachable!("handled above"),
+        AppType::Custom(id) => crate::settings::get_custom_app_dir(id)?,
     };
 
     let filename = match app {
@@ -34,6 +35,7 @@ pub fn prompt_file_path(app: &AppType) -> Result<PathBuf, AppError> {
         AppType::Gemini => "GEMINI.md",
         AppType::OpenCode | AppType::OpenClaw | AppType::Hermes => "AGENTS.md",
         AppType::ClaudeDesktop => unreachable!("handled above"),
+        AppType::Custom(_) => "AGENTS.md",
     };
 
     Ok(base_dir.join(filename))

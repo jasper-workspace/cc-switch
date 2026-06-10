@@ -30,7 +30,7 @@ import {
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { Provider, VisibleApps } from "@/types";
 import type { EnvConflict } from "@/types/env";
-import { useProvidersQuery, useSettingsQuery } from "@/lib/query";
+import { useProvidersQuery, useSettingsQuery, useCustomAppsQuery } from "@/lib/query";
 import {
   providersApi,
   settingsApi,
@@ -118,13 +118,13 @@ const HEADER_HEIGHT = 64; // px
 
 const STORAGE_KEY = "cc-switch-last-app";
 const VALID_APPS: AppId[] = [
+  "trae",
+  "codebuddy",
   "claude",
   "claude-desktop",
   "codex",
-  "gemini",
   "opencode",
   "openclaw",
-  "hermes",
 ];
 
 const getInitialApp = (): AppId => {
@@ -178,36 +178,46 @@ function App() {
   }, [currentView]);
 
   const { data: settingsData } = useSettingsQuery();
+  const { data: customAppsData } = useCustomAppsQuery();
   const useAppWindowControls =
     isLinux() && (settingsData?.useAppWindowControls ?? false);
   const dragBarHeight = useAppWindowControls ? 32 : DEFAULT_DRAG_BAR_HEIGHT;
   const contentTopOffset = dragBarHeight + HEADER_HEIGHT;
-  const visibleApps: VisibleApps = settingsData?.visibleApps ?? {
+  const visibleApps: VisibleApps = {
+    trae: true,
+    codebuddy: true,
     claude: true,
     "claude-desktop": true,
     codex: true,
-    gemini: true,
     opencode: true,
     openclaw: true,
-    hermes: true,
+    ...settingsData?.visibleApps,
   };
 
   const getFirstVisibleApp = (): AppId => {
-    if (visibleApps.claude) return "claude";
-    if (visibleApps["claude-desktop"]) return "claude-desktop";
-    if (visibleApps.codex) return "codex";
-    if (visibleApps.gemini) return "gemini";
-    if (visibleApps.opencode) return "opencode";
-    if (visibleApps.openclaw) return "openclaw";
-    if (visibleApps.hermes) return "hermes";
+    // Use VALID_APPS order to find first visible app
+    for (const appId of VALID_APPS) {
+      if (visibleApps[appId as keyof VisibleApps]) {
+        return appId;
+      }
+    }
+    // Check custom apps
+    if (customAppsData?.apps) {
+      const customAppIds = Object.keys(customAppsData.apps);
+      for (const id of customAppIds) {
+        if (visibleApps.customApps?.[id] !== false) {
+          return id as AppId;
+        }
+      }
+    }
     return "claude"; // fallback
   };
 
   useEffect(() => {
-    if (!visibleApps[activeApp]) {
+    if (!visibleApps[activeApp as keyof VisibleApps] && !visibleApps.customApps?.[activeApp]) {
       setActiveApp(getFirstVisibleApp());
     }
-  }, [visibleApps, activeApp]);
+  }, [visibleApps, activeApp, customAppsData]);
 
   // Fallback from sessions view when switching to an app without session support
   useEffect(() => {
@@ -1348,6 +1358,7 @@ function App() {
                       activeApp={activeApp}
                       onSwitch={setActiveApp}
                       visibleApps={visibleApps}
+                      customApps={customAppsData}
                       compact={isToolbarCompact}
                     />
 

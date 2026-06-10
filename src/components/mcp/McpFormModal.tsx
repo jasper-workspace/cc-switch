@@ -42,7 +42,7 @@ const McpFormModal: React.FC<McpFormModalProps> = ({
   onClose,
   existingIds = [],
   defaultFormat = "json",
-  defaultEnabledApps = ["claude", "codex", "gemini"],
+  defaultEnabledApps = ["claude", "codex", "opencode"],
 }) => {
   const { t } = useTranslation();
   const { formatTomlError, validateTomlConfig, validateJsonConfig } =
@@ -64,10 +64,10 @@ const McpFormModal: React.FC<McpFormModalProps> = ({
   const [enabledApps, setEnabledApps] = useState<{
     claude: boolean;
     codex: boolean;
-    gemini: boolean;
     opencode: boolean;
     openclaw: boolean;
-    hermes: boolean;
+    trae: boolean;
+    codebuddy: boolean;
   }>(() => {
     if (initialData?.apps) {
       return { ...initialData.apps };
@@ -75,10 +75,10 @@ const McpFormModal: React.FC<McpFormModalProps> = ({
     return {
       claude: defaultEnabledApps.includes("claude"),
       codex: defaultEnabledApps.includes("codex"),
-      gemini: defaultEnabledApps.includes("gemini"),
       opencode: defaultEnabledApps.includes("opencode"),
       openclaw: defaultEnabledApps.includes("openclaw"),
-      hermes: defaultEnabledApps.includes("hermes"),
+      trae: defaultEnabledApps.includes("trae"),
+      codebuddy: defaultEnabledApps.includes("codebuddy"),
     };
   });
 
@@ -552,22 +552,6 @@ const McpFormModal: React.FC<McpFormModalProps> = ({
 
                 <div className="flex items-center gap-2">
                   <Checkbox
-                    id="enable-gemini"
-                    checked={enabledApps.gemini}
-                    onCheckedChange={(checked: boolean) =>
-                      setEnabledApps({ ...enabledApps, gemini: checked })
-                    }
-                  />
-                  <label
-                    htmlFor="enable-gemini"
-                    className="text-sm text-foreground cursor-pointer select-none"
-                  >
-                    {t("mcp.unifiedPanel.apps.gemini")}
-                  </label>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Checkbox
                     id="enable-opencode"
                     checked={enabledApps.opencode}
                     onCheckedChange={(checked: boolean) =>
@@ -584,17 +568,33 @@ const McpFormModal: React.FC<McpFormModalProps> = ({
 
                 <div className="flex items-center gap-2">
                   <Checkbox
-                    id="enable-hermes"
-                    checked={enabledApps.hermes}
+                    id="enable-trae"
+                    checked={enabledApps.trae}
                     onCheckedChange={(checked: boolean) =>
-                      setEnabledApps({ ...enabledApps, hermes: checked })
+                      setEnabledApps({ ...enabledApps, trae: checked })
                     }
                   />
                   <label
-                    htmlFor="enable-hermes"
+                    htmlFor="enable-trae"
                     className="text-sm text-foreground cursor-pointer select-none"
                   >
-                    {t("mcp.unifiedPanel.apps.hermes")}
+                    {t("mcp.unifiedPanel.apps.trae")}
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="enable-codebuddy"
+                    checked={enabledApps.codebuddy}
+                    onCheckedChange={(checked: boolean) =>
+                      setEnabledApps({ ...enabledApps, codebuddy: checked })
+                    }
+                  />
+                  <label
+                    htmlFor="enable-codebuddy"
+                    className="text-sm text-foreground cursor-pointer select-none"
+                  >
+                    {t("mcp.unifiedPanel.apps.codebuddy")}
                   </label>
                 </div>
               </div>

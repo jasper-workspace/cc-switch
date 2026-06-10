@@ -1947,6 +1947,7 @@ impl ProviderService {
             AppType::OpenCode => Self::extract_opencode_common_config(&provider.settings_config),
             AppType::OpenClaw => Self::extract_openclaw_common_config(&provider.settings_config),
             AppType::Hermes => Ok(String::new()), // Hermes doesn't use common config snippets
+            AppType::Custom(_) => Ok(String::new()), // Custom apps don't use common config snippets
         }
     }
 
@@ -1963,6 +1964,7 @@ impl ProviderService {
             AppType::OpenCode => Self::extract_opencode_common_config(settings_config),
             AppType::OpenClaw => Self::extract_openclaw_common_config(settings_config),
             AppType::Hermes => Ok(String::new()), // Hermes doesn't use common config snippets
+            AppType::Custom(_) => Ok(String::new()), // Custom apps don't use common config snippets
         }
     }
 
@@ -2351,6 +2353,16 @@ impl ProviderService {
                     ));
                 }
             }
+            AppType::Custom(_) => {
+                // Custom apps: accept any JSON object for now
+                if !provider.settings_config.is_object() {
+                    return Err(AppError::localized(
+                        "provider.custom.settings.not_object",
+                        "自定义应用配置必须是 JSON 对象",
+                        "Custom app configuration must be a JSON object",
+                    ));
+                }
+            }
         }
 
         // Validate and clean UsageScript configuration (common for all app types)
@@ -2542,6 +2554,30 @@ impl ProviderService {
                     .ok_or_else(|| {
                         AppError::localized(
                             "provider.openclaw.api_key.missing",
+                            "缺少 API Key",
+                            "API key is missing",
+                        )
+                    })?
+                    .to_string();
+
+                let base_url = provider
+                    .settings_config
+                    .get("baseUrl")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string();
+
+                Ok((api_key, base_url))
+            }
+            AppType::Custom(_) => {
+                // Custom apps: extract apiKey and baseUrl directly on the object
+                let api_key = provider
+                    .settings_config
+                    .get("apiKey")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| {
+                        AppError::localized(
+                            "provider.custom.api_key.missing",
                             "缺少 API Key",
                             "API key is missing",
                         )

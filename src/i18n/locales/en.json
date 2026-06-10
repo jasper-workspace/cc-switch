@@ -673,10 +673,23 @@
     "appVisibility": {
       "title": "Homepage Display",
       "description": "Choose which apps to show on the homepage",
+      "addCustomApp": "Add Custom App",
       "claudeDesc": "Anthropic Claude Code CLI",
       "codexDesc": "OpenAI Codex CLI",
       "geminiDesc": "Google Gemini CLI",
       "opencodeDesc": "OpenCode CLI"
+    },
+    "customApp": {
+      "addTitle": "Add Custom App",
+      "addDescription": "Configure a new custom Agent tool",
+      "editTitle": "Edit Custom App",
+      "editDescription": "Modify custom app configuration",
+      "addSuccess": "Added successfully",
+      "addFailed": "Failed to add",
+      "updateSuccess": "Updated successfully",
+      "updateFailed": "Failed to update",
+      "deleteSuccess": "Deleted successfully",
+      "deleteFailed": "Failed to delete"
     },
     "skillStorage": {
       "title": "Skill Storage Location",
@@ -856,10 +869,10 @@
     "claudeDesktop": "Claude Desktop",
     "claude-desktop": "Claude Desktop",
     "codex": "Codex",
-    "gemini": "Gemini",
     "opencode": "OpenCode",
     "openclaw": "OpenClaw",
-    "hermes": "Hermes"
+    "trae": "Trae",
+    "codebuddy": "CodeBuddy"
   },
   "sessionManager": {
     "title": "Session Manager",
@@ -1586,10 +1599,10 @@
       "apps": {
         "claude": "Claude",
         "codex": "Codex",
-        "gemini": "Gemini",
         "opencode": "OpenCode",
         "openclaw": "OpenClaw",
-        "hermes": "Hermes"
+        "trae": "Trae",
+        "codebuddy": "CodeBuddy"
       }
     },
     "userLevelPath": "User-level MCP path",

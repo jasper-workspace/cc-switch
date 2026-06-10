@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { settingsApi } from "@/lib/api";
+import { settingsApi, customAppsApi } from "@/lib/api";
 import { LanguageSettings } from "@/components/settings/LanguageSettings";
 import { ThemeSettings } from "@/components/settings/ThemeSettings";
 import { WindowSettings } from "@/components/settings/WindowSettings";
@@ -45,11 +45,14 @@ import { UsageDashboard } from "@/components/usage/UsageDashboard";
 import { LogConfigPanel } from "@/components/settings/LogConfigPanel";
 import { AuthCenterPanel } from "@/components/settings/AuthCenterPanel";
 import { CodexAuthSettings } from "@/components/settings/CodexAuthSettings";
+import { AddCustomAppDialog } from "@/components/settings/AddCustomAppDialog";
 import { useInstalledSkills } from "@/hooks/useSkills";
 import { useSettings } from "@/hooks/useSettings";
 import { useImportExport } from "@/hooks/useImportExport";
+import { useCustomAppsQuery } from "@/lib/query";
 import { useTranslation } from "react-i18next";
 import type { SettingsFormState } from "@/hooks/useSettings";
+import type { CustomApp } from "@/types";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -99,9 +102,12 @@ export function SettingsPage({
   } = useImportExport({ onImportSuccess });
 
   const { data: installedSkills } = useInstalledSkills();
+  const { data: customAppsData, refetch: refetchCustomApps } = useCustomAppsQuery();
 
   const [activeTab, setActiveTab] = useState<string>("general");
   const [showRestartPrompt, setShowRestartPrompt] = useState(false);
+  const [showAddCustomAppDialog, setShowAddCustomAppDialog] = useState(false);
+  const [editingCustomApp, setEditingCustomApp] = useState<CustomApp | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -160,6 +166,39 @@ export function SettingsPage({
       closeAfterSave();
     }
   }, [closeAfterSave, t]);
+
+  // Custom apps handlers
+  const handleAddCustomApp = useCallback(
+    async (app: Omit<CustomApp, "createdAt" | "updatedAt">) => {
+      try {
+        await customAppsApi.add(app as CustomApp);
+        toast.success(t("settings.customApp.addSuccess", { defaultValue: "添加成功" }));
+        await refetchCustomApps();
+      } catch (error) {
+        console.error("[SettingsPage] Failed to add custom app", error);
+        toast.error(
+          t("settings.customApp.addFailed", { defaultValue: "添加失败" }),
+        );
+      }
+    },
+    [refetchCustomApps, t],
+  );
+
+  const handleEditCustomApp = useCallback(
+    async (app: Omit<CustomApp, "createdAt" | "updatedAt">) => {
+      try {
+        await customAppsApi.update(app as CustomApp);
+        toast.success(t("settings.customApp.updateSuccess", { defaultValue: "更新成功" }));
+        await refetchCustomApps();
+      } catch (error) {
+        console.error("[SettingsPage] Failed to update custom app", error);
+        toast.error(
+          t("settings.customApp.updateFailed", { defaultValue: "更新失败" }),
+        );
+      }
+    },
+    [refetchCustomApps, t],
+  );
 
   // 通用设置即时保存（无需手动点击）
   // 使用 autoSaveSettings 避免误触发系统 API（开机自启、Claude 插件等）
@@ -228,6 +267,8 @@ export function SettingsPage({
                     <AppVisibilitySettings
                       settings={settings}
                       onChange={handleAutoSave}
+                      customApps={customAppsData}
+                      onAddCustomApp={() => setShowAddCustomAppDialog(true)}
                     />
                     <SkillStorageLocationSettings
                       value={settings.skillStorageLocation ?? "cc_switch"}
@@ -533,8 +574,19 @@ export function SettingsPage({
               {t("settings.restartNow")}
             </Button>
           </DialogFooter>
-        </DialogContent>
+               </DialogContent>
       </Dialog>
+
+      {/* Add/Edit Custom App Dialog */}
+      <AddCustomAppDialog
+        isOpen={showAddCustomAppDialog}
+        onClose={() => {
+          setShowAddCustomAppDialog(false);
+          setEditingCustomApp(null);
+        }}
+        onAdd={editingCustomApp ? handleEditCustomApp : handleAddCustomApp}
+        editingApp={editingCustomApp}
+      />
     </div>
   );
 }

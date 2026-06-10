@@ -673,10 +673,23 @@
     "appVisibility": {
       "title": "主頁面顯示",
       "description": "選擇在主頁面顯示的應用程式",
+      "addCustomApp": "添加自定義應用",
       "claudeDesc": "Anthropic Claude Code CLI",
       "codexDesc": "OpenAI Codex CLI",
       "geminiDesc": "Google Gemini CLI",
       "opencodeDesc": "OpenCode CLI"
+    },
+    "customApp": {
+      "addTitle": "添加自定義應用",
+      "addDescription": "配置一個新的自定義 Agent工具",
+      "editTitle": "編輯自定義應用",
+      "editDescription": "修改自定義應用配置",
+      "addSuccess": "添加成功",
+      "addFailed": "添加失敗",
+      "updateSuccess": "更新成功",
+      "updateFailed": "更新失敗",
+      "deleteSuccess": "刪除成功",
+      "deleteFailed": "刪除失敗"
     },
     "skillStorage": {
       "title": "Skills 儲存位置",
@@ -1532,10 +1545,10 @@
       "apps": {
         "claude": "Claude",
         "codex": "Codex",
-        "gemini": "Gemini",
         "opencode": "OpenCode",
         "openclaw": "OpenClaw",
-        "hermes": "Hermes"
+        "trae": "Trae",
+        "codebuddy": "CodeBuddy"
       }
     },
     "userLevelPath": "使用者級 MCP 設定路徑",

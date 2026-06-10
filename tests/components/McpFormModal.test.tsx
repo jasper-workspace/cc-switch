@@ -356,7 +356,7 @@ type = "stdio"
       enabled: true,
       description: "Old desc",
       server: { type: "stdio", command: "old" },
-      apps: { claude: true, codex: false, gemini: false },
+      apps: { claude: true, codex: false, opencode: false, openclaw: false, trae: false, codebuddy: false },
     } as McpServer;
 
     const { onSave } = renderForm({

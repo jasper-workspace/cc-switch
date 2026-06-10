@@ -1,5 +1,5 @@
 import type { AppId } from "@/lib/api";
-import type { VisibleApps } from "@/types";
+import type { CustomApps, VisibleApps } from "@/types";
 import { ProviderIcon } from "@/components/ProviderIcon";
 import { cn } from "@/lib/utils";
 import { Monitor, Terminal } from "lucide-react";
@@ -15,17 +15,18 @@ interface AppSwitcherProps {
   activeApp: AppId;
   onSwitch: (app: AppId) => void;
   visibleApps?: VisibleApps;
+  customApps?: CustomApps;
   compact?: boolean;
 }
 
-const ALL_APPS: AppId[] = [
+const BUILTIN_APPS: AppId[] = [
+  "trae",
+  "codebuddy",
   "claude",
   "claude-desktop",
   "codex",
-  "gemini",
   "opencode",
   "openclaw",
-  "hermes",
 ];
 const STORAGE_KEY = "cc-switch-last-app";
 
@@ -33,6 +34,7 @@ export function AppSwitcher({
   activeApp,
   onSwitch,
   visibleApps,
+  customApps,
   compact,
 }: AppSwitcherProps) {
   const handleSwitch = (app: AppId) => {
@@ -41,29 +43,68 @@ export function AppSwitcher({
     onSwitch(app);
   };
   const iconSize = 20;
-  const appIconName: Record<AppId, string> = {
+
+  // Builtin app icon mapping
+  const builtinAppIconName: Record<string, string> = {
+    trae: "trae",
+    codebuddy: "codebuddy",
     claude: "claude",
     "claude-desktop": "claude",
     codex: "openai",
-    gemini: "gemini",
     opencode: "opencode",
     openclaw: "openclaw",
-    hermes: "hermes",
   };
-  const appDisplayName: Record<AppId, string> = {
+
+  // Builtin app display name mapping
+  const builtinAppDisplayName: Record<string, string> = {
+    trae: "Trae",
+    codebuddy: "CodeBuddy",
     claude: "Claude Code",
     "claude-desktop": "Claude Desktop",
     codex: "Codex",
-    gemini: "Gemini",
     opencode: "OpenCode",
     openclaw: "OpenClaw",
-    hermes: "Hermes",
   };
 
+  // Get app icon - prefer custom app metadata, fallback to builtin
+  const getAppIcon = (appId: AppId): string => {
+    if (builtinAppIconName[appId]) {
+      return builtinAppIconName[appId];
+    }
+    // Custom app
+    const customApp = customApps?.apps?.[appId];
+    return customApp?.icon || "circle";
+  };
+
+  // Get app display name - prefer custom app metadata, fallback to builtin
+  const getAppDisplayName = (appId: AppId): string => {
+    if (builtinAppDisplayName[appId]) {
+      return builtinAppDisplayName[appId];
+    }
+    // Custom app
+    const customApp = customApps?.apps?.[appId];
+    return customApp?.name || appId;
+  };
+
+  // Combine all apps (builtin + custom)
+  const allApps = [...BUILTIN_APPS];
+  if (customApps?.apps) {
+    Object.keys(customApps.apps).forEach((id) => {
+      if (!allApps.includes(id as AppId)) {
+        allApps.push(id as AppId);
+      }
+    });
+  }
+
   // Filter apps based on visibility settings (default all visible)
-  const appsToShow = ALL_APPS.filter((app) => {
+  const appsToShow = allApps.filter((app) => {
     if (!visibleApps) return true;
-    return visibleApps[app];
+    // Check builtin app visibility
+    if (BUILTIN_APPS.includes(app)) {
+      return visibleApps[app as keyof VisibleApps];
+    }
+    // Check custom app visibility
+    return visibleApps.customApps?.[app] ?? true;
   });
 
   return (
@@ -72,6 +113,9 @@ export function AppSwitcher({
         const badgeConfig = APP_BADGE_ICON[app];
         const BadgeIcon = badgeConfig?.icon;
         const isActive = activeApp === app;
+        const iconName = getAppIcon(app);
+        const displayName = getAppDisplayName(app);
+
         return (
           <button
             key={app}
@@ -85,11 +129,7 @@ export function AppSwitcher({
             )}
           >
             <span className="relative inline-flex shrink-0">
-              <ProviderIcon
-                icon={appIconName[app]}
-                name={appDisplayName[app]}
-                size={iconSize}
-              />
+              <ProviderIcon icon={iconName} name={displayName} size={iconSize} />
               {BadgeIcon && (
                 <span
                   className={cn(
@@ -120,7 +160,7 @@ export function AppSwitcher({
                   : "max-w-[120px] opacity-100 ml-2",
               )}
             >
-              {appDisplayName[app]}
+              {displayName}
             </span>
           </button>
         );

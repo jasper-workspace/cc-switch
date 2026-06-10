@@ -157,12 +157,12 @@ let mcpConfigs: McpConfigState = {
       name: "Sample Claude Server",
       enabled: true,
       apps: {
+        trae: false,
+        codebuddy: false,
         claude: true,
         codex: false,
-        gemini: false,
         opencode: false,
         openclaw: false,
-        hermes: false,
       },
       server: {
         type: "stdio",
@@ -179,10 +179,10 @@ let mcpConfigs: McpConfigState = {
       apps: {
         claude: false,
         codex: true,
-        gemini: false,
         opencode: false,
         openclaw: false,
-        hermes: false,
+        trae: false,
+        codebuddy: false,
       },
       server: {
         type: "http",
@@ -227,10 +227,10 @@ export const resetProviderState = () => {
         apps: {
           claude: true,
           codex: false,
-          gemini: false,
           opencode: false,
           openclaw: false,
-          hermes: false,
+          trae: false,
+          codebuddy: false,
         },
         server: {
           type: "stdio",
@@ -247,10 +247,10 @@ export const resetProviderState = () => {
         apps: {
           claude: false,
           codex: true,
-          gemini: false,
           opencode: false,
           openclaw: false,
-          hermes: false,
+          trae: false,
+          codebuddy: false,
         },
         server: {
           type: "http",

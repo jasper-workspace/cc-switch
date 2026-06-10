@@ -8,6 +8,7 @@ import {
   settingsApi,
   usageApi,
   sessionsApi,
+  customAppsApi,
   type AppId,
 } from "@/lib/api";
 import type {
@@ -16,6 +17,7 @@ import type {
   UsageResult,
   SessionMeta,
   SessionMessage,
+  CustomApps,
 } from "@/types";
 import { usageKeys } from "@/lib/query/usage";
 
@@ -91,6 +93,13 @@ export const useSettingsQuery = (): UseQueryResult<Settings> => {
   return useQuery({
     queryKey: ["settings"],
     queryFn: async () => settingsApi.get(),
+  });
+};
+
+export const useCustomAppsQuery = (): UseQueryResult<CustomApps> => {
+  return useQuery({
+    queryKey: ["customApps"],
+    queryFn: async () => customAppsApi.getAll(),
   });
 };
 

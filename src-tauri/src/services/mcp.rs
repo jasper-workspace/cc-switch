@@ -137,6 +137,10 @@ impl McpService {
             AppType::Hermes => {
                 mcp::sync_single_server_to_hermes(&Default::default(), &server.id, &server.server)?;
             }
+            AppType::Custom(_) => {
+                // Custom apps don't have a specific MCP config file to sync to
+                log::debug!("Custom apps don't use CC Switch MCP sync, skipping sync");
+            }
         }
         Ok(())
     }
@@ -171,6 +175,10 @@ impl McpService {
             }
             AppType::Hermes => {
                 mcp::remove_server_from_hermes(id)?;
+            }
+            AppType::Custom(_) => {
+                // Custom apps don't have a specific MCP config file to remove from
+                log::debug!("Custom apps don't use CC Switch MCP sync, skipping remove");
             }
         }
         Ok(())

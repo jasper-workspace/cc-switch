@@ -673,10 +673,23 @@
     "appVisibility": {
       "title": "ホームページ表示",
       "description": "ホームページに表示するアプリを選択",
+      "addCustomApp": "カスタムアプリを追加",
       "claudeDesc": "Anthropic Claude Code CLI",
       "codexDesc": "OpenAI Codex CLI",
       "geminiDesc": "Google Gemini CLI",
       "opencodeDesc": "OpenCode CLI"
+    },
+    "customApp": {
+      "addTitle": "カスタムアプリを追加",
+      "addDescription": "新しいカスタムAgentツールを設定",
+      "editTitle": "カスタムアプリを編集",
+      "editDescription": "カスタムアプリの設定を変更",
+      "addSuccess": "追加しました",
+      "addFailed": "追加に失敗しました",
+      "updateSuccess": "更新しました",
+      "updateFailed": "更新に失敗しました",
+      "deleteSuccess": "削除しました",
+      "deleteFailed": "削除に失敗しました"
     },
     "skillStorage": {
       "title": "スキル保存場所",
@@ -1586,10 +1599,10 @@
       "apps": {
         "claude": "Claude",
         "codex": "Codex",
-        "gemini": "Gemini",
         "opencode": "OpenCode",
         "openclaw": "OpenClaw",
-        "hermes": "Hermes"
+        "trae": "Trae",
+        "codebuddy": "CodeBuddy"
       }
     },
     "userLevelPath": "ユーザーレベルの MCP パス",

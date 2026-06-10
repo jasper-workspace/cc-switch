@@ -13,13 +13,14 @@ export type AppType =
 
 /** Skill 应用启用状态 */
 export interface SkillApps {
+  [key: string]: boolean | undefined;
+  trae: boolean;
+  codebuddy: boolean;
   claude: boolean;
   "claude-desktop"?: boolean;
   codex: boolean;
-  gemini: boolean;
   opencode: boolean;
   openclaw: boolean;
-  hermes: boolean;
 }
 
 /** 已安装的 Skill（v3.10.0+ 统一结构） */

@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
@@ -20,6 +21,50 @@ pub struct CustomEndpoint {
 
 fn default_true() -> bool {
     true
+}
+
+/// 自定义应用元数据
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CustomApp {
+    pub id: String,
+    pub name: String,
+    pub icon: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub icon_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+    #[serde(default)]
+    pub sort_index: usize,
+    pub created_at: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub updated_at: Option<i64>,
+}
+
+impl CustomApp {
+    pub fn new(id: String, name: String, icon: String) -> Self {
+        Self {
+            id,
+            name,
+            icon,
+            icon_color: None,
+            description: None,
+            enabled: true,
+            sort_index: 0,
+            created_at: chrono::Utc::now().timestamp_millis(),
+            updated_at: None,
+        }
+    }
+}
+
+/// 自定义应用集合
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct CustomApps {
+    #[serde(default)]
+    pub apps: HashMap<String, CustomApp>,
 }
 
 /// 主页面显示的应用配置
@@ -45,6 +90,9 @@ pub struct VisibleApps {
     pub openclaw: bool,
     #[serde(default)]
     pub hermes: bool,
+    /// 自定义应用的可见性（动态键值）
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    pub custom_apps: HashMap<String, bool>,
 }
 
 impl Default for VisibleApps {
@@ -57,6 +105,7 @@ impl Default for VisibleApps {
             opencode: true,
             openclaw: true,
             hermes: false, // 默认不显示，需用户手动启用
+            custom_apps: HashMap::new(),
         }
     }
 }
@@ -72,6 +121,7 @@ impl VisibleApps {
             AppType::OpenCode => self.opencode,
             AppType::OpenClaw => self.openclaw,
             AppType::Hermes => self.hermes,
+            AppType::Custom(id) => self.custom_apps.get(id).copied().unwrap_or(true),
         }
     }
 }
@@ -373,6 +423,13 @@ pub struct AppSettings {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub visible_apps: Option<VisibleApps>,
 
+    // ===== 自定义应用 =====
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub custom_apps: Option<CustomApps>,
+    /// 自定义应用的当前供应商 ID（app_id -> provider_id）
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    pub custom_app_providers: HashMap<String, String>,
+
     // ===== 设备级目录覆盖 =====
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub claude_config_dir: Option<String>,
@@ -480,6 +537,8 @@ impl Default for AppSettings {
             common_config_confirmed: None,
             language: None,
             visible_apps: None,
+            custom_apps: None,
+            custom_app_providers: HashMap::new(),
             claude_config_dir: None,
             codex_config_dir: None,
             gemini_config_dir: None,
@@ -845,6 +904,7 @@ pub fn get_current_provider(app_type: &AppType) -> Option<String> {
         AppType::OpenCode => settings.current_provider_opencode.clone(),
         AppType::OpenClaw => settings.current_provider_openclaw.clone(),
         AppType::Hermes => settings.current_provider_hermes.clone(),
+        AppType::Custom(id) => settings.custom_app_providers.get(id).cloned(),
     }
 }
 
@@ -862,6 +922,13 @@ pub fn set_current_provider(app_type: &AppType, id: Option<&str>) -> Result<(), 
         AppType::OpenCode => settings.current_provider_opencode = id_owned.clone(),
         AppType::OpenClaw => settings.current_provider_openclaw = id_owned.clone(),
         AppType::Hermes => settings.current_provider_hermes = id_owned.clone(),
+        AppType::Custom(id) => {
+            if let Some(provider_id) = id_owned {
+                settings.custom_app_providers.insert(id.clone(), provider_id);
+            } else {
+                settings.custom_app_providers.remove(id.as_str());
+            }
+        }
     })
 }
 
@@ -1015,6 +1082,66 @@ pub fn update_s3_sync_status(status: WebDavSyncStatus) -> Result<(), AppError> {
             s3.status = status;
         }
     })
+}
+
+// ===== 自定义应用管理函数 =====
+
+/// 获取所有自定义应用
+pub fn get_custom_apps() -> CustomApps {
+    settings_store()
+        .read()
+        .unwrap_or_else(|e| {
+            log::warn!("设置锁已毒化，使用恢复值: {e}");
+            e.into_inner()
+        })
+        .custom_apps
+        .clone()
+        .unwrap_or_default()
+}
+
+/// 添加或更新自定义应用
+pub fn upsert_custom_app(app: CustomApp) -> Result<CustomApp, AppError> {
+    mutate_settings(|settings| {
+        let apps = settings.custom_apps.get_or_insert_with(Default::default);
+        let now = chrono::Utc::now().timestamp_millis();
+        let mut updated_app = app.clone();
+        if let Some(existing) = apps.apps.get(&app.id) {
+            updated_app.created_at = existing.created_at;
+            updated_app.updated_at = Some(now);
+        } else {
+            updated_app.created_at = now;
+            updated_app.updated_at = None;
+        }
+        apps.apps.insert(app.id.clone(), updated_app.clone());
+    })?;
+    Ok(app)
+}
+
+/// 删除自定义应用
+pub fn delete_custom_app(id: &str) -> Result<bool, AppError> {
+    mutate_settings(|settings| {
+        if let Some(apps) = settings.custom_apps.as_mut() {
+            if let Some(mut app) = apps.apps.remove(id) {
+                // 从可见性设置中移除
+                if let Some(visible) = settings.visible_apps.as_mut() {
+                    visible.custom_apps.remove(id);
+                }
+                log::info!("已删除自定义应用: {}", id);
+                return;
+            }
+        }
+        log::warn!("尝试删除不存在的自定义应用: {}", id);
+    })?;
+    Ok(true)
+}
+
+/// 获取自定义应用的配置目录
+pub fn get_custom_app_dir(app_id: &str) -> Result<PathBuf, AppError> {
+    let base_dir = crate::config::get_app_config_dir();
+    let custom_apps_dir = base_dir.join("custom-apps").join(app_id);
+    std::fs::create_dir_all(&custom_apps_dir)
+        .map_err(|e| AppError::io(&custom_apps_dir, e))?;
+    Ok(custom_apps_dir)
 }
 
 #[cfg(test)]

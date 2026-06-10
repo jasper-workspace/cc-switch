@@ -136,6 +136,9 @@ impl ConfigService {
             AppType::Hermes => {
                 // Hermes uses additive mode, no live sync needed
             }
+            AppType::Custom(_) => {
+                // Custom apps use additive mode, no live sync needed
+            }
         }
 
         Ok(())

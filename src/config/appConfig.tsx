@@ -3,7 +3,6 @@ import type { AppId } from "@/lib/api/types";
 import {
   ClaudeIcon,
   CodexIcon,
-  GeminiIcon,
   OpenClawIcon,
 } from "@/components/BrandIcons";
 import { ProviderIcon } from "@/components/ProviderIcon";
@@ -16,28 +15,58 @@ export interface AppConfig {
 }
 
 export const APP_IDS: AppId[] = [
+  "trae",
+  "codebuddy",
   "claude",
   "claude-desktop",
   "codex",
-  "gemini",
   "opencode",
   "openclaw",
-  "hermes",
 ];
 
 /** App IDs shown in Skills panels (excludes OpenClaw — it doesn't support Skills) */
 export const SKILLS_APP_IDS: AppId[] = [
+  "trae",
+  "codebuddy",
   "claude",
   "codex",
-  "gemini",
   "opencode",
-  "hermes",
 ];
 
 /** App IDs shown in MCP panels (excludes OpenClaw) */
 export const MCP_APP_IDS: AppId[] = [...SKILLS_APP_IDS];
 
 export const APP_ICON_MAP: Record<AppId, AppConfig> = {
+  trae: {
+    label: "Trae",
+    icon: (
+      <ProviderIcon
+        icon="trae"
+        name="Trae"
+        size={14}
+        showFallback={false}
+      />
+    ),
+    activeClass:
+      "bg-teal-500/10 ring-1 ring-teal-500/20 hover:bg-teal-500/20 text-teal-600 dark:text-teal-400",
+    badgeClass:
+      "bg-teal-500/10 text-teal-700 dark:text-teal-300 hover:bg-teal-500/20 border-0 gap-1.5",
+  },
+  codebuddy: {
+    label: "CodeBuddy",
+    icon: (
+      <ProviderIcon
+        icon="codebuddy"
+        name="CodeBuddy"
+        size={14}
+        showFallback={false}
+      />
+    ),
+    activeClass:
+      "bg-purple-500/10 ring-1 ring-purple-500/20 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400",
+    badgeClass:
+      "bg-purple-500/10 text-purple-700 dark:text-purple-300 hover:bg-purple-500/20 border-0 gap-1.5",
+  },
   claude: {
     label: "Claude",
     icon: <ClaudeIcon size={14} />,
@@ -62,14 +91,6 @@ export const APP_ICON_MAP: Record<AppId, AppConfig> = {
     badgeClass:
       "bg-green-500/10 text-green-700 dark:text-green-300 hover:bg-green-500/20 border-0 gap-1.5",
   },
-  gemini: {
-    label: "Gemini",
-    icon: <GeminiIcon size={14} />,
-    activeClass:
-      "bg-blue-500/10 ring-1 ring-blue-500/20 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400",
-    badgeClass:
-      "bg-blue-500/10 text-blue-700 dark:text-blue-300 hover:bg-blue-500/20 border-0 gap-1.5",
-  },
   opencode: {
     label: "OpenCode",
     icon: (
@@ -92,20 +113,5 @@ export const APP_ICON_MAP: Record<AppId, AppConfig> = {
       "bg-rose-500/10 ring-1 ring-rose-500/20 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400",
     badgeClass:
       "bg-rose-500/10 text-rose-700 dark:text-rose-300 hover:bg-rose-500/20 border-0 gap-1.5",
-  },
-  hermes: {
-    label: "Hermes",
-    icon: (
-      <ProviderIcon
-        icon="hermes"
-        name="Hermes"
-        size={14}
-        showFallback={false}
-      />
-    ),
-    activeClass:
-      "bg-violet-500/10 ring-1 ring-violet-500/20 hover:bg-violet-500/20 text-violet-600 dark:text-violet-400",
-    badgeClass:
-      "bg-violet-500/10 text-violet-700 dark:text-violet-300 hover:bg-violet-500/20 border-0 gap-1.5",
   },
 };

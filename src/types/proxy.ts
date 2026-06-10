@@ -42,13 +42,14 @@ export interface ProxyServerInfo {
 }
 
 export interface ProxyTakeoverStatus {
+  [key: string]: boolean | undefined;
+  trae: boolean;
+  codebuddy: boolean;
   claude: boolean;
   "claude-desktop"?: boolean;
   codex: boolean;
-  gemini: boolean;
   opencode: boolean;
   openclaw: boolean;
-  hermes: boolean;
 }
 
 export interface ProviderHealth {

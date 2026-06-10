@@ -282,6 +282,11 @@ impl StreamCheckService {
                 // Already handled via early dispatch above
                 unreachable!("OpenCode/OpenClaw/Hermes 已通过 check_once_without_adapter 处理")
             }
+            AppType::Custom(_) => Err(crate::error::AppError::localized(
+                "stream_check_unsupported",
+                "自定义应用暂不支持流式检查",
+                "Custom apps do not support stream check",
+            )),
         };
 
         let response_time = start.elapsed().as_millis() as u64;
@@ -1410,6 +1415,10 @@ impl StreamCheckService {
             AppType::OpenClaw | AppType::Hermes => {
                 // OpenClaw/Hermes use models array in settings_config
                 // Try to extract first model from the models array
+                Self::extract_openclaw_model(provider).unwrap_or_else(|| "gpt-4o".to_string())
+            }
+            AppType::Custom(_) => {
+                // Custom apps use additive mode - extract first available model
                 Self::extract_openclaw_model(provider).unwrap_or_else(|| "gpt-4o".to_string())
             }
         }

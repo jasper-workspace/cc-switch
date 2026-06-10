@@ -673,10 +673,23 @@
     "appVisibility": {
       "title": "主页面显示",
       "description": "选择在主页面显示的应用",
+      "addCustomApp": "添加自定义应用",
       "claudeDesc": "Anthropic Claude Code CLI",
       "codexDesc": "OpenAI Codex CLI",
       "geminiDesc": "Google Gemini CLI",
       "opencodeDesc": "OpenCode CLI"
+    },
+    "customApp": {
+      "addTitle": "添加自定义应用",
+      "addDescription": "配置一个新的自定义 Agent工具",
+      "editTitle": "编辑自定义应用",
+      "editDescription": "修改自定义应用配置",
+      "addSuccess": "添加成功",
+      "addFailed": "添加失败",
+      "updateSuccess": "更新成功",
+      "updateFailed": "更新失败",
+      "deleteSuccess": "删除成功",
+      "deleteFailed": "删除失败"
     },
     "skillStorage": {
       "title": "Skills 存储位置",
@@ -856,10 +869,10 @@
     "claudeDesktop": "Claude Desktop",
     "claude-desktop": "Claude Desktop",
     "codex": "Codex",
-    "gemini": "Gemini",
     "opencode": "OpenCode",
     "openclaw": "OpenClaw",
-    "hermes": "Hermes"
+    "trae": "Trae",
+    "codebuddy": "CodeBuddy"
   },
   "sessionManager": {
     "title": "会话管理",
@@ -1586,10 +1599,10 @@
       "apps": {
         "claude": "Claude",
         "codex": "Codex",
-        "gemini": "Gemini",
         "opencode": "OpenCode",
         "openclaw": "OpenClaw",
-        "hermes": "Hermes"
+        "trae": "Trae",
+        "codebuddy": "CodeBuddy"
       }
     },
     "userLevelPath": "用户级 MCP 配置路径",

@@ -3,19 +3,24 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ProviderIcon } from "@/components/ProviderIcon";
 import type { SettingsFormState } from "@/hooks/useSettings";
-import type { VisibleApps } from "@/types";
+import type { CustomApps, VisibleApps } from "@/types";
 import type { AppId } from "@/lib/api";
+import { Plus } from "lucide-react";
 
 interface AppVisibilitySettingsProps {
   settings: SettingsFormState;
   onChange: (updates: Partial<SettingsFormState>) => void;
+  customApps?: CustomApps;
+  onAddCustomApp?: () => void;
 }
 
-const APP_CONFIG: Array<{
+const BUILTIN_APP_CONFIG: Array<{
   id: AppId;
   icon: string;
   nameKey: string;
 }> = [
+  { id: "trae", icon: "trae", nameKey: "apps.trae" },
+  { id: "codebuddy", icon: "codebuddy", nameKey: "apps.codebuddy" },
   { id: "claude", icon: "claude", nameKey: "apps.claudeCode" },
   {
     id: "claude-desktop",
@@ -23,33 +28,43 @@ const APP_CONFIG: Array<{
     nameKey: "apps.claudeDesktop",
   },
   { id: "codex", icon: "openai", nameKey: "apps.codex" },
-  { id: "gemini", icon: "gemini", nameKey: "apps.gemini" },
   { id: "opencode", icon: "opencode", nameKey: "apps.opencode" },
   { id: "openclaw", icon: "openclaw", nameKey: "apps.openclaw" },
-  { id: "hermes", icon: "hermes", nameKey: "apps.hermes" },
 ];
 
 export function AppVisibilitySettings({
   settings,
   onChange,
+  customApps,
+  onAddCustomApp,
 }: AppVisibilitySettingsProps) {
   const { t } = useTranslation();
 
-  const visibleApps: VisibleApps = settings.visibleApps ?? {
+  const visibleApps: VisibleApps = {
+    trae: true,
+    codebuddy: true,
     claude: true,
     "claude-desktop": true,
     codex: true,
-    gemini: true,
     opencode: true,
     openclaw: true,
-    hermes: true,
+    ...settings.visibleApps,
   };
 
   // Count how many apps are currently visible
-  const visibleCount = Object.values(visibleApps).filter(Boolean).length;
+  const builtinCount = BUILTIN_APP_CONFIG.filter(
+    (app) => visibleApps[app.id as keyof VisibleApps]
+  ).length;
+  const customAppsCount = customApps?.apps
+    ? Object.keys(customApps.apps).filter(
+        (id) => visibleApps.customApps?.[id] !== false
+      ).length
+    : 0;
+  const visibleCount = builtinCount + customAppsCount;
 
-  const handleToggle = (appId: AppId) => {
-    const isCurrentlyVisible = visibleApps[appId];
+  const handleToggleBuiltin = (appId: AppId) => {
+    const key = appId as keyof VisibleApps;
+    const isCurrentlyVisible = visibleApps[key] as boolean;
     // Prevent disabling the last visible app
     if (isCurrentlyVisible && visibleCount <= 1) return;
 
@@ -57,6 +72,22 @@ export function AppVisibilitySettings({
       visibleApps: {
         ...visibleApps,
         [appId]: !isCurrentlyVisible,
+      },
+    });
+  };
+
+  const handleToggleCustom = (appId: string) => {
+    const isCurrentlyVisible = visibleApps.customApps?.[appId] ?? true;
+    // Prevent disabling the last visible app
+    if (isCurrentlyVisible && visibleCount <= 1) return;
+
+    onChange({
+      visibleApps: {
+        ...visibleApps,
+        customApps: {
+          ...(visibleApps.customApps ?? {}),
+          [appId]: !isCurrentlyVisible,
+        },
       },
     });
   };
@@ -71,9 +102,11 @@ export function AppVisibilitySettings({
           {t("settings.appVisibility.description")}
         </p>
       </header>
+
+      {/* Builtin Apps */}
       <div className="inline-flex gap-1 rounded-md border border-border-default bg-background p-1">
-        {APP_CONFIG.map((app) => {
-          const isVisible = visibleApps[app.id];
+        {BUILTIN_APP_CONFIG.map((app) => {
+          const isVisible = (visibleApps[app.id as keyof VisibleApps] as boolean) ?? true;
           // Disable button if this is the last visible app
           const isDisabled = isVisible && visibleCount <= 1;
 
@@ -82,7 +115,7 @@ export function AppVisibilitySettings({
               key={app.id}
               active={isVisible}
               disabled={isDisabled}
-              onClick={() => handleToggle(app.id)}
+              onClick={() => handleToggleBuiltin(app.id)}
               icon={app.icon}
               name={t(app.nameKey)}
             >
@@ -91,6 +124,44 @@ export function AppVisibilitySettings({
           );
         })}
       </div>
+
+      {/* Custom Apps */}
+      {customApps?.apps && Object.keys(customApps.apps).length > 0 && (
+        <div className="inline-flex gap-1 rounded-md border border-border-default bg-background p-1">
+          {Object.values(customApps.apps).map((app) => {
+            const isVisible = visibleApps.customApps?.[app.id] ?? true;
+            // Disable button if this is the last visible app
+            const isDisabled = isVisible && visibleCount <= 1;
+
+            return (
+              <AppButton
+                key={app.id}
+                active={isVisible}
+                disabled={isDisabled}
+                onClick={() => handleToggleCustom(app.id)}
+                icon={app.icon}
+                name={app.name}
+              >
+                {app.name}
+              </AppButton>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Add Custom App Button */}
+      {onAddCustomApp && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onAddCustomApp}
+          className="h-11 p-4 ml-2"
+        >
+          <Plus className="h-4 w-4" />
+          {t("settings.appVisibility.addCustomApp")}
+        </Button>
+      )}
     </section>
   );
 }
@@ -120,7 +191,7 @@ function AppButton({
       size="sm"
       variant={active ? "default" : "ghost"}
       className={cn(
-        "min-w-[90px] w-auto gap-1.5 px-3",
+        "min-w-[90px] w-auto gap-1.5 px-3 h-9",
         active
           ? "shadow-sm"
           : "text-muted-foreground hover:text-foreground hover:bg-muted",

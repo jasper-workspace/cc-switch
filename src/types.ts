@@ -258,13 +258,32 @@ export type ClaudeApiKeyField = "ANTHROPIC_AUTH_TOKEN" | "ANTHROPIC_API_KEY";
 
 // 主页面显示的应用配置
 export interface VisibleApps {
+  trae: boolean;
+  codebuddy: boolean;
   claude: boolean;
   "claude-desktop": boolean;
   codex: boolean;
-  gemini: boolean;
   opencode: boolean;
   openclaw: boolean;
-  hermes: boolean;
+  customApps?: Record<string, boolean>;
+}
+
+// 自定义应用元数据
+export interface CustomApp {
+  id: string;
+  name: string;
+  icon: string;
+  iconColor?: string;
+  description?: string;
+  enabled: boolean;
+  sortIndex: number;
+  createdAt: number;
+  updatedAt?: number;
+}
+
+// 自定义应用集合
+export interface CustomApps {
+  apps: Record<string, CustomApp>;
 }
 
 // WebDAV 同步状态
@@ -460,13 +479,14 @@ export interface McpServerSpec {
 
 // v3.7.0: MCP 服务器应用启用状态
 export interface McpApps {
+  [key: string]: boolean | undefined;
+  trae: boolean;
+  codebuddy: boolean;
   claude: boolean;
   "claude-desktop"?: boolean;
   codex: boolean;
-  gemini: boolean;
   opencode: boolean;
   openclaw: boolean;
-  hermes: boolean;
 }
 
 // MCP 服务器条目（v3.7.0 统一结构）
